@@ -1,0 +1,58 @@
+@host = http://localhost:5216
+
+### 1. Registrar usuario (devuelve accessToken)
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{ "nombre": "Breinner", "email": "breinner@example.com", "password": "Clave12345" }
+
+### 2. Login
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "breinner@example.com", "password": "Clave12345" }
+
+###
+@token = {{login.response.body.$.accessToken}}
+
+### 3. Crear planta
+POST {{host}}/plantas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "nombre": "Monstera", "especie": "Monstera deliciosa", "ubicacion": "Sala", "fotoUrl": null }
+
+### 4. Listar plantas
+GET {{host}}/plantas
+Authorization: Bearer {{token}}
+
+### 5. Detalle de planta
+GET {{host}}/plantas/1
+Authorization: Bearer {{token}}
+
+### 6. Editar planta
+PUT {{host}}/plantas/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "nombre": "Monstera grande", "especie": "Monstera deliciosa", "ubicacion": "Balcón", "fotoUrl": null }
+
+### 7. Agregar cuidado (tipo: riego | fertilizacion | poda | rotacion | trasplante | revision_plagas)
+POST {{host}}/plantas/1/cuidados
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "tipo": "riego", "frecuenciaDias": 1 }
+
+### 8. Marcar cuidado como realizado
+PUT {{host}}/cuidados/1/completar
+Authorization: Bearer {{token}}
+
+### 9. Cuidados pendientes
+GET {{host}}/pendientes
+Authorization: Bearer {{token}}
+
+### 10. Eliminar planta
+DELETE {{host}}/plantas/1
+Authorization: Bearer {{token}}

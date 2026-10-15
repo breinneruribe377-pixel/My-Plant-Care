@@ -1,0 +1,197 @@
+openapi: 3.0.1
+info:
+  title: MyPlantCare API
+  version: v1
+  description: API REST para gestionar plantas y sus cuidados periódicos. Swagger UI en vivo en /swagger al ejecutar la API.
+servers:
+  - url: http://localhost:5216
+  - url: https://localhost:7051
+tags:
+  - name: Auth
+  - name: Plantas
+  - name: Cuidados
+  - name: Pendientes
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar usuario (devuelve un JWT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UsuarioRegistroInputDto' }
+      responses:
+        '201': { description: Usuario creado, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponseDto' } } } }
+        '400': { description: Datos inválidos }
+        '409': { description: El correo ya está registrado }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión (devuelve un JWT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInputDto' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponseDto' } } } }
+        '401': { description: Credenciales inválidas }
+  /plantas:
+    get:
+      tags: [Plantas]
+      summary: Listar las plantas del usuario (RF-01)
+      security: [{ Bearer: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PlantaDto' } } } } }
+        '401': { description: No autenticado }
+    post:
+      tags: [Plantas]
+      summary: Crear planta (RF-01)
+      security: [{ Bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlantaInputDto' }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/PlantaDto' } } } }
+        '400': { description: Datos inválidos }
+        '401': { description: No autenticado }
+  /plantas/{plantaId}:
+    parameters:
+      - { name: plantaId, in: path, required: true, schema: { type: integer, format: int32 } }
+    get:
+      tags: [Plantas]
+      summary: Detalle de una planta con sus cuidados (RF-01)
+      security: [{ Bearer: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PlantaDto' } } } }
+        '404': { description: No existe o no pertenece al usuario }
+    put:
+      tags: [Plantas]
+      summary: Editar planta (RF-01)
+      security: [{ Bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlantaInputDto' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PlantaDto' } } } }
+        '400': { description: Datos inválidos }
+        '404': { description: No existe o no pertenece al usuario }
+    delete:
+      tags: [Plantas]
+      summary: Eliminar planta y sus cuidados (RF-01)
+      security: [{ Bearer: [] }]
+      responses:
+        '204': { description: Eliminada }
+        '404': { description: No existe o no pertenece al usuario }
+  /plantas/{plantaId}/cuidados:
+    parameters:
+      - { name: plantaId, in: path, required: true, schema: { type: integer, format: int32 } }
+    post:
+      tags: [Cuidados]
+      summary: Agregar un cuidado a una planta (RF-02, RF-03)
+      security: [{ Bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CuidadoInputDto' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CuidadoDto' } } } }
+        '400': { description: Datos inválidos }
+        '404': { description: La planta no existe o no pertenece al usuario }
+  /cuidados/{cuidadoId}/completar:
+    put:
+      tags: [Cuidados]
+      summary: Marcar un cuidado como realizado y recalcular la próxima fecha (RF-04)
+      security: [{ Bearer: [] }]
+      parameters:
+        - { name: cuidadoId, in: path, required: true, schema: { type: integer, format: int32 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CuidadoDto' } } } }
+        '404': { description: El cuidado no existe o no pertenece al usuario }
+  /pendientes:
+    get:
+      tags: [Pendientes]
+      summary: Cuidados cuya próxima fecha ya llegó o pasó (RF-05)
+      security: [{ Bearer: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/CuidadoPendienteDto' } } } } }
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    TipoCuidado:
+      type: string
+      enum: [riego, fertilizacion, poda, rotacion, trasplante, revision_plagas]
+    UsuarioRegistroInputDto:
+      type: object
+      required: [nombre, email, password]
+      properties:
+        nombre: { type: string, minLength: 2, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 150 }
+        password: { type: string, minLength: 8, maxLength: 100 }
+    LoginInputDto:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    TokenResponseDto:
+      type: object
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, example: 3600 }
+    PlantaInputDto:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: { type: string, maxLength: 100 }
+        especie: { type: string, nullable: true, maxLength: 100 }
+        ubicacion: { type: string, nullable: true, maxLength: 100 }
+        fotoUrl: { type: string, nullable: true, maxLength: 255 }
+    CuidadoInputDto:
+      type: object
+      required: [tipo, frecuenciaDias]
+      properties:
+        tipo: { $ref: '#/components/schemas/TipoCuidado' }
+        frecuenciaDias: { type: integer, minimum: 1, maximum: 3650 }
+    CuidadoDto:
+      type: object
+      properties:
+        id: { type: integer }
+        plantaId: { type: integer }
+        tipo: { $ref: '#/components/schemas/TipoCuidado' }
+        frecuenciaDias: { type: integer }
+        ultimaVezRealizado: { type: string, format: date-time, nullable: true }
+        proximaFecha: { type: string, format: date-time }
+    CuidadoPendienteDto:
+      type: object
+      properties:
+        id: { type: integer }
+        plantaId: { type: integer }
+        plantaNombre: { type: string }
+        tipo: { $ref: '#/components/schemas/TipoCuidado' }
+        frecuenciaDias: { type: integer }
+        proximaFecha: { type: string, format: date-time }
+    PlantaDto:
+      type: object
+      properties:
+        id: { type: integer }
+        usuarioId: { type: integer }
+        nombre: { type: string }
+        especie: { type: string, nullable: true }
+        ubicacion: { type: string, nullable: true }
+        fotoUrl: { type: string, nullable: true }
+        fechaCreacion: { type: string, format: date-time }
+        cuidados:
+          type: array
+          items: { $ref: '#/components/schemas/CuidadoDto' }

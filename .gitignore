@@ -1,0 +1,23 @@
+## .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+launchSettings.local.json
+[Dd]ebug/
+[Rr]elease/
+*.log
+TestResults/
+
+## Secretos y entorno local
+.env
+appsettings.Local.json
+secrets.json
+
+## IDEs / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
